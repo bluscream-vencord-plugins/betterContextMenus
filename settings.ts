@@ -1,13 +1,13 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
 export const settings = definePluginSettings({
-    fallbackDict: {
-        type: OptionType.BOOLEAN,
-        description: "Use fallback dictionary for channel statuses",
-        default: true,
-        restartNeeded: false,
-    },
     logging: {
         type: OptionType.BOOLEAN,
         description: "Enable logging of flux events and other internal actions to the console",

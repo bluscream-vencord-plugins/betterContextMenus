@@ -1,5 +1,11 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { addGlobalContextMenuPatch, GlobalContextMenuPatchCallback, removeGlobalContextMenuPatch } from "@api/ContextMenu";
-import { React, Menu } from "@webpack/common";
+import { Menu,React } from "@webpack/common";
 
 export function addToSubmenu(children: any[], menuId: string, menuLabel: string, newItems: any[], log?: (...args: any[]) => void) {
     let targetMenu: any = null;

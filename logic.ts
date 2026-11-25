@@ -1,10 +1,17 @@
-import { ChannelStore, MessageStore, UserStore, VoiceStateStore } from "@webpack/common";
-import { type Channel } from "@vencord/discord-types";
-import { isVoiceChannel } from "./utils/channels";
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { copyWithToast } from "@utils/discord";
-import { settings } from "./settings";
+import { type Channel } from "@vencord/discord-types";
+import { ChannelStore, MessageStore, UserStore, VoiceStateStore } from "@webpack/common";
+
 import { pluginInfo } from "./index";
-import { log, getVoiceChannelStatus, extractCodeWithIgnore } from "./utils";
+import { settings } from "./settings";
+import { extractCodeWithIgnore, fetchVoiceChannelStatus, log } from "./utils";
+import { isVoiceChannel } from "./utils/channels";
 
 export async function extractCode(channel: Channel): Promise<string | null> {
     log(`extractCode called for channel: ${channel.name} (${channel.id})`);
@@ -13,8 +20,8 @@ export async function extractCode(channel: Channel): Promise<string | null> {
     log(`Using regex pattern: ${settings.store.codeRegex}`);
     log(`Ignored words: [${ignoredWords.join(", ")}]`);
 
-    log(`Checking channel status`);
-    const status = getVoiceChannelStatus(channel.id);
+    log("Checking channel status");
+    const status = await fetchVoiceChannelStatus(channel);
     if (status) {
         const statusMatch = extractCodeWithIgnore(status, regex, ignoredWords);
         if (statusMatch) {
@@ -37,11 +44,10 @@ export async function extractCode(channel: Channel): Promise<string | null> {
         return nameMatch;
     }
 
-    log(`Checking messages in channel...`);
+    log("Checking messages in channel...");
     try {
-        const messages = MessageStore.getMessages(channel.id);
-        if (messages && messages.toArray) {
-            const messageArray = messages.toArray();
+        const messageArray = MessageStore.getMessages(channel.id)?._array;
+        if (messageArray) {
             for (const message of messageArray) {
                 if (message.content) {
                     const messageMatch = extractCodeWithIgnore(message.content, regex, ignoredWords);
@@ -53,15 +59,15 @@ export async function extractCode(channel: Channel): Promise<string | null> {
             }
         }
     } catch (error) {
-        console.error(`[vcUtils] Error extracting code from messages:`, error);
+        console.error("[vcUtils] Error extracting code from messages:", error);
     }
 
-    log(`No code found in channel`);
+    log("No code found in channel");
     return null;
 }
 
 export async function handleVoiceStateUpdate(voiceState: any) {
-    log(`VOICE_STATE_UPDATE received:`, {
+    log("VOICE_STATE_UPDATE received:", {
         channelId: voiceState.channelId,
         userId: voiceState.userId,
         currentUserId: UserStore.getCurrentUser().id,
@@ -88,10 +94,10 @@ export async function handleVoiceStateUpdate(voiceState: any) {
             log(`✅ Auto-extracted code ${code} - copying to clipboard`);
             copyWithToast(code, `Auto-extracted code ${code} copied`);
         } else {
-            log(`❌ No code found for auto-extraction`);
+            log("❌ No code found for auto-extraction");
         }
     } catch (error) {
-        console.error(`[vcUtils] ❌ Error in auto-extract:`, error);
+        console.error("[vcUtils] ❌ Error in auto-extract:", error);
     }
 }
 
