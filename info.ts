@@ -5,13 +5,12 @@
  */
 
 export const pluginInfo = {
-    id: "voiceChannelUtils",
     name: "VoiceChannelUtils",
-    description: "Voice channel utilities for copying names, statuses, and codes",
+    description: "Copies voice channel names, statuses, info and codes, and sets voice channel statuses.",
     color: "#7289da",
     authors: [
         { name: "Bluscream", id: 467777925790564352n },
         { name: "b1uscr34m", id: 896443818935713853n },
         { name: "Antigravity.AI", id: 0n }
-    ],
+    ]
 };

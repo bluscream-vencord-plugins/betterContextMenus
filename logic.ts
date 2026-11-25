@@ -6,122 +6,59 @@
 
 import { copyWithToast } from "@utils/discord";
 import { type Channel } from "@vencord/discord-types";
-import { ChannelStore, MessageStore, UserStore, VoiceStateStore } from "@webpack/common";
+import { AuthenticationStore, ChannelStore, MessageStore, SelectedChannelStore } from "@webpack/common";
 
-import { pluginInfo } from "./index";
 import { settings } from "./settings";
-import { extractCodeWithIgnore, fetchVoiceChannelStatus, log } from "./utils";
-import { isVoiceChannel } from "./utils/channels";
+import { extractCodeWithIgnore, fetchVoiceChannelStatus, isVoiceChannel, log, splitList } from "./utils";
+
+export interface OwnVoiceState {
+    userId: string;
+    sessionId?: string;
+    channelId?: string | null;
+}
+
+let lastChannelId: string | null = null;
+
+export function resetVoiceTracking() {
+    lastChannelId = SelectedChannelStore.getVoiceChannelId() ?? null;
+}
 
 export async function extractCode(channel: Channel): Promise<string | null> {
-    log(`extractCode called for channel: ${channel.name} (${channel.id})`);
-    const regex = new RegExp(settings.store.codeRegex);
-    const ignoredWords = settings.store.ignoredWords.split(",").filter(w => w.trim());
-    log(`Using regex pattern: ${settings.store.codeRegex}`);
-    log(`Ignored words: [${ignoredWords.join(", ")}]`);
+    const regex = new RegExp(settings.store.codeRegex, "g");
+    const ignored = new Set(splitList(settings.store.ignoredWords).map(word => word.toLowerCase()));
 
-    log("Checking channel status");
     const status = await fetchVoiceChannelStatus(channel);
-    if (status) {
-        const statusMatch = extractCodeWithIgnore(status, regex, ignoredWords);
-        if (statusMatch) {
-            log(`Found code in channel status: ${statusMatch}`);
-            return statusMatch;
-        }
-    }
+    const fromChannel = [status, channel.topic, channel.name]
+        .map(text => text && extractCodeWithIgnore(text, regex, ignored))
+        .find(Boolean);
+    if (fromChannel) return fromChannel;
 
-    log(`Checking channel topic: "${channel.topic}"`);
-    const topicMatch = extractCodeWithIgnore(channel.topic || "", regex, ignoredWords);
-    if (topicMatch) {
-        log(`Found code in channel topic: ${topicMatch}`);
-        return topicMatch;
+    const messages = MessageStore.getMessages(channel.id)?._array ?? [];
+    for (const message of messages.toReversed()) {
+        const code = message.content && extractCodeWithIgnore(message.content, regex, ignored);
+        if (code) return code;
     }
-
-    log(`Checking channel name: "${channel.name}"`);
-    const nameMatch = extractCodeWithIgnore(channel.name || "", regex, ignoredWords);
-    if (nameMatch) {
-        log(`Found code in channel name: ${nameMatch}`);
-        return nameMatch;
-    }
-
-    log("Checking messages in channel...");
-    try {
-        const messageArray = MessageStore.getMessages(channel.id)?._array;
-        if (messageArray) {
-            for (const message of messageArray) {
-                if (message.content) {
-                    const messageMatch = extractCodeWithIgnore(message.content, regex, ignoredWords);
-                    if (messageMatch) {
-                        log(`Found code in message from ${message.author?.username || "unknown"}: ${messageMatch}`);
-                        return messageMatch;
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error("[vcUtils] Error extracting code from messages:", error);
-    }
-
-    log("No code found in channel");
     return null;
 }
 
-export async function handleVoiceStateUpdate(voiceState: any) {
-    log("VOICE_STATE_UPDATE received:", {
-        channelId: voiceState.channelId,
-        userId: voiceState.userId,
-        currentUserId: UserStore.getCurrentUser().id,
-        isCurrentUser: voiceState.userId === UserStore.getCurrentUser().id,
-        hasChannelId: !!voiceState.channelId
-    });
-
-    try {
-        if (!voiceState.channelId) return;
-        if (voiceState.userId !== UserStore.getCurrentUser().id) return;
-
-        const channel = ChannelStore.getChannel(voiceState.channelId);
-        if (!isVoiceChannel(channel)) return;
-
-        const autoExtractServers = settings.store.autoExtractServers.split(",").map(id => id.trim()).filter(Boolean);
-        const serverInList = autoExtractServers.includes(channel.guild_id);
-
-        if (!serverInList) return;
-
-        log(`✅ Auto-extracting code for channel ${channel.name} in server ${channel.guild_id}`);
-
-        const code = await extractCode(channel);
-        if (code) {
-            log(`✅ Auto-extracted code ${code} - copying to clipboard`);
-            copyWithToast(code, `Auto-extracted code ${code} copied`);
-        } else {
-            log("❌ No code found for auto-extraction");
-        }
-    } catch (error) {
-        console.error("[vcUtils] ❌ Error in auto-extract:", error);
-    }
+async function autoExtract(channel: Channel) {
+    if (!isVoiceChannel(channel) || !splitList(settings.store.autoExtractServers).includes(channel.guild_id)) return;
+    const code = await extractCode(channel);
+    log(code ? `Auto-extracted a code in ${channel.id}` : `No code found in ${channel.id}`);
+    if (code) copyWithToast(code, `Auto-extracted code ${code} copied`);
 }
 
-export async function handleVoiceChannelStatusUpdate(channelId: string, guildId: string) {
-    try {
-        const currentUser = UserStore.getCurrentUser();
-        if (!currentUser) return;
+export function handleVoiceStateUpdates(voiceStates: OwnVoiceState[]) {
+    const sessionId = AuthenticationStore.getSessionId();
+    const own = voiceStates.find(state => state.sessionId === sessionId);
+    if (!own) return;
+    const previous = lastChannelId;
+    lastChannelId = own.channelId ?? null;
+    if (!lastChannelId || lastChannelId === previous) return;
+    return autoExtract(ChannelStore.getChannel(lastChannelId));
+}
 
-        const currentVoiceState = VoiceStateStore.getVoiceStateForUser(currentUser.id);
-        if (!currentVoiceState || currentVoiceState.channelId !== channelId) return;
-
-        const channel = ChannelStore.getChannel(channelId);
-        if (!channel) return;
-
-        const autoExtractServers = settings.store.autoExtractServers.split(",").map(id => id.trim()).filter(Boolean);
-        const serverInList = autoExtractServers.includes(guildId);
-
-        if (!serverInList) return;
-
-        const code = await extractCode(channel);
-        if (code) {
-            copyWithToast(code, `Auto-extracted code ${code} copied`);
-        }
-    } catch (error) {
-        console.error(`[${pluginInfo.name}] ❌ Error in status update auto-extract:`, error);
-    }
+export function handleVoiceChannelStatusUpdate(channelId: string) {
+    if (SelectedChannelStore.getVoiceChannelId() !== channelId) return;
+    return autoExtract(ChannelStore.getChannel(channelId));
 }

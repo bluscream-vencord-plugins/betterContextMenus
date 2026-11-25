@@ -1,18 +1,33 @@
-# Blu VC Utils
+# VoiceChannelUtils
 
-A lightweight Vencord plugin that adds voice channel copy utilities to the context menu.
+Equicord user plugin: voice channel helpers in the "Voice Tools" submenu of a voice channel's (or a user in voice's) right-click menu. If the built-in VoiceChatUtilities plugin already adds that submenu, the items are merged into it.
 
-## Features
+## Menu items
 
-- **Copy channel name** - Copies the voice channel name to clipboard
-- **Copy Voice Status** - Copies the current voice channel status to clipboard
-- **Copy Code** - Extracts and copies voice channel codes to clipboard
+- **Copy**
+  - **Copy Info**: a link to the channel and its latest loaded message, plus server, name, topic, status, who is in it and how many messages are loaded.
+  - **Copy Name** and **Copy Status**.
+  - **Copy Code**: the first code found in the channel status, topic, name, or the loaded messages (newest first).
+- **Set Status**: sets or clears the voice channel status. Only shown in voice channels where you're allowed to set it.
 
-## Usage
+## Auto copy
 
-Right-click on any voice or stage channel to access the "Voice Tools" menu with the copy options.
+When you join a voice channel in one of the listed servers in this Discord window, or its status changes while you're in it, the plugin copies the channel's code. Joins from your other devices, and muting or deafening, don't trigger it.
 
-## Requirements
+## Settings
 
-- Vencord
-- Discord desktop or web client
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| Code regex | five letters or digits | What counts as a code. Invalid expressions are rejected. |
+| Ignored words | `camos,grind` | Words that match the regex but aren't codes. |
+| Auto extract servers | two COD Warzone servers | Comma separated server ids for auto copy. |
+| Logging | off | Debug logging to the console. |
+
+## Install
+
+```sh
+cd src/userplugins
+git clone https://github.com/bluscream-vencord-plugins/voiceChannelUtils
+```
+
+Rebuild Equicord and enable VoiceChannelUtils. Update with `git pull`.

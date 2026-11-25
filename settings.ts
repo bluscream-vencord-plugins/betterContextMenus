@@ -7,29 +7,35 @@
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
+import { PATTERNS } from "./patterns";
+
 export const settings = definePluginSettings({
     logging: {
         type: OptionType.BOOLEAN,
-        description: "Enable logging of flux events and other internal actions to the console",
-        default: true,
-        restartNeeded: false,
+        description: "Log what the plugin does to the console.",
+        default: false
     },
     codeRegex: {
         type: OptionType.STRING,
-        description: "Regex pattern to match codes",
-        default: "\\b([a-z0-9]{5}|[A-Z0-9]{5})\\b",
-        restartNeeded: false,
+        description: "Regular expression that matches a code.",
+        default: PATTERNS.defaults.codeRegex,
+        isValid(value: string) {
+            try {
+                new RegExp(value, "g");
+                return true;
+            } catch (e) {
+                return e instanceof Error ? e.message : "That isn't a valid regular expression.";
+            }
+        }
     },
     ignoredWords: {
         type: OptionType.STRING,
-        description: "Whitelisted words to ignore in status extraction",
-        default: "camos,grind",
-        restartNeeded: false,
+        description: "Comma separated words that look like codes but should be skipped.",
+        default: PATTERNS.defaults.ignoredWords
     },
     autoExtractServers: {
         type: OptionType.STRING,
-        description: "Servers to auto-extract codes from when joining a voice channel",
-        default: "500074231544152074,687345074627149873",
-        restartNeeded: false,
+        description: "Comma separated server ids where joining a voice channel copies its code.",
+        default: PATTERNS.defaults.autoExtractServers
     }
 });

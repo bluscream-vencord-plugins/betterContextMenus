@@ -4,20 +4,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { NavContextMenuPatchCallback } from "@api/ContextMenu";
+import { GlobalContextMenuPatchCallback } from "@api/ContextMenu";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
-import { type Channel, type Message, type RenderModalProps, type User } from "@vencord/discord-types";
-import { ChannelStore, GuildStore, Menu, MessageStore, Modal, openModal, PermissionsBits, PermissionStore, React, TextInput, UserStore, useState, VoiceStateStore } from "@webpack/common";
+import { type Channel, type RenderModalProps, type User } from "@vencord/discord-types";
+import { ChannelType } from "@vencord/discord-types/enums";
+import { ChannelStore, GuildStore, Menu, MessageStore, Modal, openModal, PermissionsBits, PermissionStore, TextInput, UserStore, useState, VoiceStateStore } from "@webpack/common";
+import type { ReactElement, ReactNode } from "react";
 
 import { extractCode } from "./logic";
-import { fetchVoiceChannelStatus, log, setVoiceChannelStatus, showToast } from "./utils";
-import { isVoiceChannel } from "./utils/channels";
-import { addToSubmenu } from "./utils/menus";
+import { PATTERNS } from "./patterns";
+import { cachedVoiceChannelStatus, fetchVoiceChannelStatus, isVoiceChannel, setVoiceChannelStatus, showToast } from "./utils";
 
-interface VoiceChannelContextProps {
-    channel: Channel;
-}
+type MenuChildren = Array<ReactElement<any> | null>;
 
 interface SetStatusModalProps {
     channel: Channel;
@@ -25,16 +24,20 @@ interface SetStatusModalProps {
     modalProps: RenderModalProps;
 }
 
-function SetStatusModal({ channel, initialStatus, modalProps }: SetStatusModalProps) {
+const SetStatusModal = ErrorBoundary.wrap(({ channel, initialStatus, modalProps }: SetStatusModalProps) => {
     const [status, setStatus] = useState(initialStatus);
 
     async function save() {
         modalProps.onClose();
+        const next = status.trim();
+        if (next === initialStatus) return;
         try {
-            await setVoiceChannelStatus(channel.id, status.trim());
-            showToast(status.trim() ? `Status of ${channel.name} set` : `Status of ${channel.name} cleared`);
+            if (await setVoiceChannelStatus(channel.id, next))
+                showToast(next ? `Status of ${channel.name} set.` : `Status of ${channel.name} cleared.`);
+            else
+                showToast("Discord didn't accept the channel status.", true);
         } catch (error) {
-            showToast("Could not set the channel status", error);
+            showToast("Could not set the channel status.", error);
         }
     }
 
@@ -50,95 +53,59 @@ function SetStatusModal({ channel, initialStatus, modalProps }: SetStatusModalPr
             </form>
         </Modal>
     );
+}, { noop: true });
+
+function addToVoiceTools(children: MenuChildren, items: ReactNode[]) {
+    const existing = children.find(child => child?.props?.id === PATTERNS.voiceTools.id);
+    if (existing) {
+        const current: ReactNode = existing.props.children;
+        existing.props.children = [...(Array.isArray(current) ? current : [current]), ...items];
+        return;
+    }
+    children.splice(-1, 0,
+        <Menu.MenuItem id={PATTERNS.voiceTools.id} key={PATTERNS.voiceTools.id} label={PATTERNS.voiceTools.label}>
+            {items}
+        </Menu.MenuItem>
+    );
 }
 
-const SafeSetStatusModal = ErrorBoundary.wrap(SetStatusModal);
+async function copyInfo(channel: Channel) {
+    const guild = GuildStore.getGuild(channel.guild_id);
+    const status = await fetchVoiceChannelStatus(channel);
+    const users = Object.values(VoiceStateStore.getVoiceStatesForChannel(channel.id))
+        .map(state => UserStore.getUser(state.userId))
+        .filter(Boolean)
+        .map(user => `\\@${user.username}`)
+        .join(", ");
+    const messages = MessageStore.getMessages(channel.id)?._array ?? [];
+    const lastMessage = messages.at(-1);
 
-export const VoiceChannelContext: NavContextMenuPatchCallback = (children, { channel }: VoiceChannelContextProps) => {
-    log("VoiceChannelContext patch running for channel", channel.name);
-    if (!isVoiceChannel(channel)) return children;
-
-    const items = [copySubmenuFor(channel)];
-    if (PermissionStore.can(PermissionsBits.SET_VOICE_CHANNEL_STATUS, channel)) {
-        items.push(
-            <Menu.MenuItem
-                key="voice-tools-set-status"
-                id="voice-tools-set-status"
-                label="Set Status"
-                action={async () => {
-                    const initialStatus = await fetchVoiceChannelStatus(channel) ?? "";
-                    openModal(modalProps => <SafeSetStatusModal channel={channel} initialStatus={initialStatus} modalProps={modalProps} />);
-                }}
-            />
-        );
-    }
-
-    addToSubmenu(children, "voice-tools", "Voice Tools", items, log);
-    return children;
-};
+    let info = `${location.origin}/channels/${channel.guild_id}/${channel.id}`;
+    if (lastMessage) info += `/${lastMessage.id}`;
+    if (guild) info += `\nGuild: \`${guild.name}\``;
+    info += `\nName: \`${channel.name}\``;
+    if (channel.topic) info += `\nTopic: \`${channel.topic}\``;
+    if (status) info += `\nStatus: \`${status}\``;
+    if (users) info += `\nUsers: ${users}`;
+    if (messages.length) info += `\nMessages: ${messages.length}`;
+    copyWithToast(info);
+}
 
 function copySubmenuFor(channel: Channel) {
     return (
-        <Menu.MenuItem
-            key="voice-tools-copy-submenu"
-            id="voice-tools-copy-submenu"
-            label="Copy"
-        >
+        <Menu.MenuItem key={PATTERNS.items.copy} id={PATTERNS.items.copy} label="Copy">
             <Menu.MenuItem
-                key="voice-tools-copy-info"
-                id="voice-tools-copy-info"
+                id={PATTERNS.items.copyInfo}
                 label="Copy Info"
-                action={async () => {
-                    try {
-                        log(`Starting copy info for channel: ${channel.name}`);
-                        let guild;
-                        try { guild = GuildStore.getGuild(channel.guild_id); } catch (e) {}
-                        const status = await fetchVoiceChannelStatus(channel);
-
-                        let users = "";
-                        try {
-                            const voiceStates = VoiceStateStore.getVoiceStatesForChannel(channel.id) as Record<string, any>;
-                            users = Object.values(voiceStates || {}).map(state => {
-                                const user = UserStore.getUser(state.userId);
-                                return user ? `\\@${user.username}` : null;
-                            }).filter(Boolean).join(", ");
-                        } catch (e) {}
-
-                        let messageCount = 0;
-                        let lastMessage: Message | null = null;
-                        try {
-                            const messages = MessageStore.getMessages(channel.id)?._array;
-                            messageCount = messages?.length ?? 0;
-                            lastMessage = messages?.[0] ?? null;
-                        } catch (e) {}
-
-                        let info = `https://discord.com/channels/${channel.guild_id}/${channel.id}`;
-                        if (lastMessage) info += `/${lastMessage.id}`;
-                        if (guild) info += `\nGuild: \`${guild.name}\``;
-                        if (channel?.name) info += `\nName: \`${channel.name}\``;
-                        if (channel?.topic) info += `\nTopic: \`${channel.topic}\``;
-                        if (status) info += `\nStatus: \`${status}\``;
-                        if (users) info += `\nUsers: ${users}`;
-                        if (messageCount > 0) info += `\nMessages: ${messageCount}`;
-
-                        log("Final info:", info);
-                        copyWithToast(info.trim());
-                    } catch (error) {
-                        showToast("Error copying info", error);
-                    }
-                }}
+                action={() => copyInfo(channel).catch(error => showToast("Could not copy the channel info.", error))}
             />
             <Menu.MenuItem
-                key="voice-tools-copy-name"
-                id="voice-tools-copy-name"
+                id={PATTERNS.items.copyName}
                 label="Copy Name"
-                action={() => {
-                    if (channel?.name) copyWithToast(channel.name, `Channel name "${channel.name}" copied`);
-                }}
+                action={() => copyWithToast(channel.name, `Channel name "${channel.name}" copied`)}
             />
             <Menu.MenuItem
-                key="voice-tools-copy-status"
-                id="voice-tools-copy-status"
+                id={PATTERNS.items.copyStatus}
                 label="Copy Status"
                 action={async () => {
                     const status = await fetchVoiceChannelStatus(channel);
@@ -147,26 +114,43 @@ function copySubmenuFor(channel: Channel) {
                 }}
             />
             <Menu.MenuItem
-                key="voice-tools-copy-code"
-                id="voice-tools-copy-code"
+                id={PATTERNS.items.copyCode}
                 label="Copy Code"
                 action={async () => {
                     const code = await extractCode(channel);
                     if (code) copyWithToast(code, `Code ${code} copied`);
+                    else showToast("No code found in this channel.");
                 }}
             />
         </Menu.MenuItem>
     );
 }
 
-export const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: { user: User }) => {
-    if (!user) return;
-    const voiceState = VoiceStateStore.getVoiceStateForUser(user.id);
-    if (!voiceState?.channelId) return;
+function addVoiceChannelItems(children: MenuChildren, channel: Channel) {
+    const items = [copySubmenuFor(channel)];
+    if (channel.type === ChannelType.GUILD_VOICE && PermissionStore.can(PermissionsBits.SET_VOICE_CHANNEL_STATUS, channel)) {
+        items.push(
+            <Menu.MenuItem
+                key={PATTERNS.items.setStatus}
+                id={PATTERNS.items.setStatus}
+                label="Set Status"
+                action={() => {
+                    const initialStatus = cachedVoiceChannelStatus(channel) ?? "";
+                    openModal(modalProps => <SetStatusModal channel={channel} initialStatus={initialStatus} modalProps={modalProps} />);
+                }}
+            />
+        );
+    }
+    addToVoiceTools(children, items);
+}
 
-    const channel = ChannelStore.getChannel(voiceState.channelId);
-    if (!channel) return;
-
-    VoiceChannelContext(children, { channel });
-    return children;
+export const contextMenuPatch: GlobalContextMenuPatchCallback = (navId, children, props: { channel?: Channel; user?: User; }) => {
+    if (navId === PATTERNS.menus.channel) {
+        if (isVoiceChannel(props.channel)) addVoiceChannelItems(children, props.channel);
+        return;
+    }
+    if (navId !== PATTERNS.menus.user || !props.user) return;
+    const channelId = VoiceStateStore.getVoiceStateForUser(props.user.id)?.channelId;
+    const channel = channelId ? ChannelStore.getChannel(channelId) : null;
+    if (isVoiceChannel(channel)) addVoiceChannelItems(children, channel);
 };
