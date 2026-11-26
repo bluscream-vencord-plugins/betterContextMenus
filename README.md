@@ -17,6 +17,13 @@ Voice channel helpers sit in a "Voice Channel Utils" submenu of a voice channel'
 
 When you join a voice channel in one of the listed servers in this Discord window, or its status changes while you're in it, the plugin copies the channel's code. Joins from your other devices, and muting or deafening, don't trigger it.
 
+## Microphone
+
+Formerly the PttToggle plugin; its settings carry over. Right-click the microphone button:
+
+- **Push to Talk**: switches between push to talk and voice activity. Warns you if push to talk has no keybind.
+- **Krisp**: turns Krisp noise cancellation on or off. Optionally sets a fixed voice activity sensitivity while Krisp is off and puts the old one back when it's turned on again (or the plugin is stopped).
+
 ## Links
 
 **Open in Browser** appears right after Discord's "Open Link" in any menu that has it, such as a link in a message. It always opens the link in your default browser, even when Equibop's "open links in app" setting would open it in an Equibop window.
@@ -31,6 +38,9 @@ When you join a voice channel in one of the listed servers in this Discord windo
 | Copy Info / Copy Name / Copy Status / Copy Code | on | Show each Copy item. With all four off, the Copy submenu is gone. |
 | Set Status | on | Show Set Status. |
 | User menu | on | Also show the voice channel items on users who are in voice. |
+| Show PTT toggle / Show Krisp toggle | on | Show each microphone menu item. |
+| Override threshold without Krisp | off | Use a fixed sensitivity while Krisp is off. |
+| Krisp off threshold | -60 dB | That sensitivity. |
 | Open in browser | on | Adds Open in Browser after Open Link. |
 | Show Open Chat when locked | on | See above. |
 | Logging | off | Debug logging to the console. |

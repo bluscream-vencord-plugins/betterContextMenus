@@ -24,6 +24,20 @@ export const PATTERNS = {
         protocols: ["https:", "http:"]
     },
 
+    /** Push to Talk and Krisp toggles in the microphone menu, formerly the PttToggle plugin. */
+    audio: {
+        menuId: "audio-device-context",
+        pttItemId: "vc-ptt-toggle",
+        krispItemId: "vc-ptt-krisp-toggle",
+        pttMode: "PUSH_TO_TALK",
+        voiceMode: "VOICE_ACTIVITY",
+        pttAction: "PUSH_TO_TALK",
+        audioActions: ["setMode", "setNoiseCancellation"],
+        keybindsStore: "KeybindsStore",
+        oldPlugin: "PttToggle",
+        oldSettings: ["showPttToggle", "showKrispToggle", "overrideThresholdWithoutKrisp", "krispOffThreshold", "savedThreshold", "savedAutoThreshold"]
+    } as const,
+
     /** This plugin's name before it became BetterContextMenus; its settings are migrated. */
     oldPluginName: "VoiceChannelUtils",
 

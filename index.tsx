@@ -5,9 +5,10 @@
  */
 
 import { addGlobalContextMenuPatch, removeGlobalContextMenuPatch } from "@api/ContextMenu";
-import { migratePluginSettings } from "@api/Settings";
+import { migratePluginSettings, migrateSettingsFromPlugin } from "@api/Settings";
 import definePlugin from "@utils/types";
 
+import { audioMenuPatch, restoreThreshold } from "./audioMenu";
 import { pluginInfo } from "./info";
 import { handleVoiceChannelStatusUpdate, handleVoiceStateUpdates, type OwnVoiceState, resetVoiceTracking } from "./logic";
 import { linkMenuPatch } from "./linkMenu";
@@ -16,6 +17,7 @@ import { PATTERNS } from "./patterns";
 import { settings } from "./settings";
 
 migratePluginSettings(pluginInfo.name, PATTERNS.oldPluginName);
+migrateSettingsFromPlugin(pluginInfo.name, PATTERNS.audio.oldPlugin, ...PATTERNS.audio.oldSettings);
 
 export default definePlugin({
     name: pluginInfo.name,
@@ -36,7 +38,8 @@ export default definePlugin({
 
     contextMenus: {
         [PATTERNS.menus.channel]: channelMenuPatch,
-        [PATTERNS.menus.user]: userMenuPatch
+        [PATTERNS.menus.user]: userMenuPatch,
+        [PATTERNS.audio.menuId]: audioMenuPatch
     },
 
     flux: {
@@ -57,5 +60,6 @@ export default definePlugin({
 
     stop() {
         removeGlobalContextMenuPatch(linkMenuPatch);
+        restoreThreshold();
     }
 });

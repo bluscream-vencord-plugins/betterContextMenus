@@ -49,10 +49,32 @@ export const settings = definePluginSettings({
         description: "Add \"Open in Browser\" after Open Link, which always opens the link in your browser instead of an Equibop window.",
         default: true
     },
+    showPttToggle: {
+        type: OptionType.BOOLEAN,
+        description: "Show a push to talk toggle in the microphone context menu.",
+        default: true
+    },
+    showKrispToggle: {
+        type: OptionType.BOOLEAN,
+        description: "Show a Krisp toggle in the microphone context menu.",
+        default: true
+    },
+    overrideThresholdWithoutKrisp: {
+        type: OptionType.BOOLEAN,
+        description: "Set a fixed voice activity sensitivity while Krisp is turned off from the menu, and put the old one back when Krisp is turned on again.",
+        default: false
+    },
+    krispOffThreshold: {
+        type: OptionType.SLIDER,
+        description: "Sensitivity in dB used while Krisp is off, if the option above is on.",
+        default: -60,
+        markers: [-100, -80, -60, -40, -20, 0],
+        stickToMarkers: false
+    },
     showOpenChatWhenLocked: {
         type: OptionType.BOOLEAN,
         description: "Don't hide \"Open Chat\" on locked voice channels whose chat you can see.",
         default: true,
         restartNeeded: true
     }
-});
+}).withPrivateSettings<{ savedThreshold?: number; savedAutoThreshold?: boolean; }>();
