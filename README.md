@@ -1,6 +1,6 @@
 # VoiceChannelUtils
 
-Equicord user plugin: voice channel helpers in the "Voice Tools" submenu of a voice channel's (or a user in voice's) right-click menu. If the built-in VoiceChatUtilities plugin already adds that submenu, the items are merged into it.
+Equicord user plugin: voice channel helpers in a "Voice Channel Utils" submenu of a voice channel's (or a user in voice's) right-click menu. To merge them into the built-in VoiceChatUtilities plugin's "Voice Tools" submenu, use the MenuCustomisation plugin and move `voice-tools-copy-submenu` and `voice-tools-set-status` into `voice-tools`.
 
 ## Menu items
 

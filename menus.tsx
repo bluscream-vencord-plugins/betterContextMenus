@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { GlobalContextMenuPatchCallback } from "@api/ContextMenu";
+import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
 import { type Channel, type RenderModalProps, type User } from "@vencord/discord-types";
@@ -55,15 +55,9 @@ const SetStatusModal = ErrorBoundary.wrap(({ channel, initialStatus, modalProps 
     );
 }, { noop: true });
 
-function addToVoiceTools(children: MenuChildren, items: ReactNode[]) {
-    const existing = children.find(child => child?.props?.id === PATTERNS.voiceTools.id);
-    if (existing) {
-        const current: ReactNode = existing.props.children;
-        existing.props.children = [...(Array.isArray(current) ? current : [current]), ...items];
-        return;
-    }
-    children.splice(-1, 0,
-        <Menu.MenuItem id={PATTERNS.voiceTools.id} key={PATTERNS.voiceTools.id} label={PATTERNS.voiceTools.label}>
+function addSubmenu(children: MenuChildren, items: ReactNode[]) {
+    children.push(
+        <Menu.MenuItem id={PATTERNS.submenu.id} key={PATTERNS.submenu.id} label={PATTERNS.submenu.label}>
             {items}
         </Menu.MenuItem>
     );
@@ -141,16 +135,16 @@ function addVoiceChannelItems(children: MenuChildren, channel: Channel) {
             />
         );
     }
-    addToVoiceTools(children, items);
+    addSubmenu(children, items);
 }
 
-export const contextMenuPatch: GlobalContextMenuPatchCallback = (navId, children, props: { channel?: Channel; user?: User; }) => {
-    if (navId === PATTERNS.menus.channel) {
-        if (isVoiceChannel(props.channel)) addVoiceChannelItems(children, props.channel);
-        return;
-    }
-    if (navId !== PATTERNS.menus.user || !props.user) return;
-    const channelId = VoiceStateStore.getVoiceStateForUser(props.user.id)?.channelId;
+export const channelMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { channel?: Channel; }) => {
+    if (isVoiceChannel(channel)) addVoiceChannelItems(children, channel);
+};
+
+export const userMenuPatch: NavContextMenuPatchCallback = (children, { user }: { user?: User; }) => {
+    if (!user) return;
+    const channelId = VoiceStateStore.getVoiceStateForUser(user.id)?.channelId;
     const channel = channelId ? ChannelStore.getChannel(channelId) : null;
     if (isVoiceChannel(channel)) addVoiceChannelItems(children, channel);
 };

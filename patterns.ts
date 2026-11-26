@@ -22,10 +22,8 @@ export const PATTERNS = {
         channel: "channel-context",
         user: "user-context"
     },
-    /** The "Voice Tools" submenu, created by the built-in VoiceChatUtilities plugin or by this one. */
-    voiceTools: { id: "voice-tools", label: "Voice Tools" },
-    /** Discord's "Join Without Entrance Sound" item, shown when you have an entrance sound set. */
-    joinWithoutEntranceSound: "join-muted-custom-join-sound",
+    /** This plugin's own submenu. MenuCustomisation can move its items elsewhere, such as into Voice Tools. */
+    submenu: { id: "vc-voice-channel-utils", label: "Voice Channel Utils" },
     items: {
         setStatus: "voice-tools-set-status",
         copy: "voice-tools-copy-submenu",

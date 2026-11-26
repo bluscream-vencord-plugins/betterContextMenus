@@ -4,12 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { addGlobalContextMenuPatch, findGroupChildrenByChildId, removeGlobalContextMenuPatch } from "@api/ContextMenu";
 import definePlugin from "@utils/types";
 
 import { pluginInfo } from "./info";
 import { handleVoiceChannelStatusUpdate, handleVoiceStateUpdates, type OwnVoiceState, resetVoiceTracking } from "./logic";
-import { contextMenuPatch } from "./menus";
+import { channelMenuPatch, userMenuPatch } from "./menus";
 import { PATTERNS } from "./patterns";
 import { settings } from "./settings";
 
@@ -17,16 +16,11 @@ export default definePlugin({
     name: pluginInfo.name,
     description: pluginInfo.description,
     authors: pluginInfo.authors,
-    dependencies: ["ContextMenuAPI"],
     settings,
 
     contextMenus: {
-        [PATTERNS.menus.channel](children) {
-            if (!settings.store.hideJoinWithoutEntranceSound) return;
-            const group = findGroupChildrenByChildId(PATTERNS.joinWithoutEntranceSound, children);
-            const index = group?.findIndex(c => c?.props?.id === PATTERNS.joinWithoutEntranceSound) ?? -1;
-            if (group && index !== -1) group.splice(index, 1);
-        }
+        [PATTERNS.menus.channel]: channelMenuPatch,
+        [PATTERNS.menus.user]: userMenuPatch
     },
 
     flux: {
@@ -40,10 +34,5 @@ export default definePlugin({
 
     start() {
         resetVoiceTracking();
-        addGlobalContextMenuPatch(contextMenuPatch);
-    },
-
-    stop() {
-        removeGlobalContextMenuPatch(contextMenuPatch);
     }
 });
