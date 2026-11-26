@@ -24,6 +24,8 @@ export const PATTERNS = {
     },
     /** The "Voice Tools" submenu, created by the built-in VoiceChatUtilities plugin or by this one. */
     voiceTools: { id: "voice-tools", label: "Voice Tools" },
+    /** Discord's "Join Without Entrance Sound" item, shown when you have an entrance sound set. */
+    joinWithoutEntranceSound: "join-muted-custom-join-sound",
     items: {
         setStatus: "voice-tools-set-status",
         copy: "voice-tools-copy-submenu",

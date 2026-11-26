@@ -10,6 +10,11 @@ import { OptionType } from "@utils/types";
 import { PATTERNS } from "./patterns";
 
 export const settings = definePluginSettings({
+    hideJoinWithoutEntranceSound: {
+        type: OptionType.BOOLEAN,
+        description: "Hide Discord's \"Join Without Entrance Sound\" item in voice channel menus.",
+        default: true
+    },
     logging: {
         type: OptionType.BOOLEAN,
         description: "Log what the plugin does to the console.",
