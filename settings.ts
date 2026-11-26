@@ -38,6 +38,11 @@ export const settings = definePluginSettings({
         description: "Comma separated server ids where joining a voice channel copies its code.",
         default: PATTERNS.defaults.autoExtractServers
     },
+    openInBrowser: {
+        type: OptionType.BOOLEAN,
+        description: "Add \"Open in Browser\" after Open Link, which always opens the link in your browser instead of an Equibop window.",
+        default: true
+    },
     showOpenChatWhenLocked: {
         type: OptionType.BOOLEAN,
         description: "Don't hide \"Open Chat\" on locked voice channels whose chat you can see.",

@@ -4,13 +4,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { addGlobalContextMenuPatch, removeGlobalContextMenuPatch } from "@api/ContextMenu";
+import { migratePluginSettings } from "@api/Settings";
 import definePlugin from "@utils/types";
 
 import { pluginInfo } from "./info";
 import { handleVoiceChannelStatusUpdate, handleVoiceStateUpdates, type OwnVoiceState, resetVoiceTracking } from "./logic";
+import { linkMenuPatch } from "./linkMenu";
 import { channelMenuPatch, userMenuPatch } from "./menus";
 import { PATTERNS } from "./patterns";
 import { settings } from "./settings";
+
+migratePluginSettings(pluginInfo.name, PATTERNS.oldPluginName);
 
 export default definePlugin({
     name: pluginInfo.name,
@@ -43,7 +48,14 @@ export default definePlugin({
         }
     },
 
+    dependencies: ["ContextMenuAPI"],
+
     start() {
         resetVoiceTracking();
+        addGlobalContextMenuPatch(linkMenuPatch);
+    },
+
+    stop() {
+        removeGlobalContextMenuPatch(linkMenuPatch);
     }
 });

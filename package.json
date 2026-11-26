@@ -1,5 +1,5 @@
 {
-    "name": "voiceChannelUtils",
+    "name": "betterContextMenus",
     "version": "1.0.0",
     "description": "Voice channel utilities for copying names, statuses, and codes",
     "main": "index.tsx",
@@ -10,7 +10,7 @@
     "license": "GPL-3.0-or-later",
     "repository": {
         "type": "git",
-        "url": "https://github.com/bluscream-vencord-plugins/voiceChannelUtils.git"
+        "url": "https://github.com/bluscream-vencord-plugins/betterContextMenus.git"
     },
     "vencord": {
         "plugin": true,

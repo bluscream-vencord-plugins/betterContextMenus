@@ -17,6 +17,16 @@ export const PATTERNS = {
     /** How long to wait for channel statuses before reading the store anyway. */
     channelInfoTimeoutMs: 3000,
 
+    /** "Open in Browser", placed after Discord's own Open Link item, which Equibop may open in a popup window. */
+    openExternally: {
+        id: "vc-bcm-open-in-browser",
+        anchor: "open-native-link",
+        protocols: ["https:", "http:"]
+    },
+
+    /** This plugin's name before it became BetterContextMenus; its settings are migrated. */
+    oldPluginName: "VoiceChannelUtils",
+
     /** Discord's voice channel menu only shows "Open Chat" with the Connect permission; this checks View Channel instead. */
     openChat: {
         find: 'id:"end-stage",label',

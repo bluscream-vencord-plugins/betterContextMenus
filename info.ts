@@ -5,8 +5,8 @@
  */
 
 export const pluginInfo = {
-    name: "VoiceChannelUtils",
-    description: "Copies voice channel names, statuses, info and codes, and sets voice channel statuses.",
+    name: "BetterContextMenus",
+    description: "Adds useful items to Discord's right-click menus: voice channel copy and status tools, Open Chat on locked voice channels, and more.",
     color: "#7289da",
     authors: [
         { name: "Bluscream", id: 467777925790564352n },
