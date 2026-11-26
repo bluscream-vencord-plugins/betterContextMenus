@@ -18,6 +18,17 @@ export default definePlugin({
     authors: pluginInfo.authors,
     settings,
 
+    patches: [
+        {
+            find: PATTERNS.openChat.find,
+            predicate: () => settings.store.showOpenChatWhenLocked,
+            replacement: {
+                match: PATTERNS.openChat.match,
+                replace: PATTERNS.openChat.replace
+            }
+        }
+    ],
+
     contextMenus: {
         [PATTERNS.menus.channel]: channelMenuPatch,
         [PATTERNS.menus.user]: userMenuPatch

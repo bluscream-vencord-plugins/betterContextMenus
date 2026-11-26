@@ -37,5 +37,11 @@ export const settings = definePluginSettings({
         type: OptionType.STRING,
         description: "Comma separated server ids where joining a voice channel copies its code.",
         default: PATTERNS.defaults.autoExtractServers
+    },
+    showOpenChatWhenLocked: {
+        type: OptionType.BOOLEAN,
+        description: "Don't hide \"Open Chat\" on locked voice channels whose chat you can see.",
+        default: true,
+        restartNeeded: true
     }
 });

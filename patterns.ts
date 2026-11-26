@@ -17,6 +17,13 @@ export const PATTERNS = {
     /** How long to wait for channel statuses before reading the store anyway. */
     channelInfoTimeoutMs: 3000,
 
+    /** Discord's voice channel menu only shows "Open Chat" with the Connect permission; this checks View Channel instead. */
+    openChat: {
+        find: 'id:"end-stage",label',
+        match: /(?<=\.can\(\i\.\i\.)CONNECT(?=,\i\),\[\i\]\)&&\i\.isGuildVocal\(\)\?\(0,\i\.jsx\)\(\i\.\i,\{id:"open-chat")/,
+        replace: "VIEW_CHANNEL"
+    },
+
     /** Context menus this plugin adds to. */
     menus: {
         channel: "channel-context",
