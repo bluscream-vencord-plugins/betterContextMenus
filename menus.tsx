@@ -7,6 +7,7 @@
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
+import { isTruthy } from "@utils/guards";
 import { type Channel, type RenderModalProps, type User } from "@vencord/discord-types";
 import { ChannelType } from "@vencord/discord-types/enums";
 import { ChannelStore, GuildStore, Menu, MessageStore, Modal, openModal, PermissionsBits, PermissionStore, TextInput, UserStore, useState, VoiceStateStore } from "@webpack/common";
@@ -14,6 +15,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { extractCode } from "./logic";
 import { PATTERNS } from "./patterns";
+import { settings } from "./settings";
 import { cachedVoiceChannelStatus, fetchVoiceChannelStatus, isVoiceChannel, setVoiceChannelStatus, showToast } from "./utils";
 
 type MenuChildren = Array<ReactElement<any> | null>;
@@ -86,43 +88,48 @@ async function copyInfo(channel: Channel) {
 }
 
 function copySubmenuFor(channel: Channel) {
-    return (
-        <Menu.MenuItem key={PATTERNS.items.copy} id={PATTERNS.items.copy} label="Copy">
-            <Menu.MenuItem
-                id={PATTERNS.items.copyInfo}
-                label="Copy Info"
-                action={() => copyInfo(channel).catch(error => showToast("Could not copy the channel info.", error))}
-            />
-            <Menu.MenuItem
-                id={PATTERNS.items.copyName}
-                label="Copy Name"
-                action={() => copyWithToast(channel.name, `Channel name "${channel.name}" copied`)}
-            />
-            <Menu.MenuItem
-                id={PATTERNS.items.copyStatus}
-                label="Copy Status"
-                action={async () => {
-                    const status = await fetchVoiceChannelStatus(channel);
-                    if (status) copyWithToast(status, `Channel status "${status}" copied`);
-                    else showToast("This channel has no status.");
-                }}
-            />
-            <Menu.MenuItem
-                id={PATTERNS.items.copyCode}
-                label="Copy Code"
-                action={async () => {
-                    const code = await extractCode(channel);
-                    if (code) copyWithToast(code, `Code ${code} copied`);
-                    else showToast("No code found in this channel.");
-                }}
-            />
-        </Menu.MenuItem>
-    );
+    const { copyInfo: info, copyName, copyStatus, copyCode } = settings.store;
+    const items = [
+        info && <Menu.MenuItem
+            key={PATTERNS.items.copyInfo}
+            id={PATTERNS.items.copyInfo}
+            label="Copy Info"
+            action={() => copyInfo(channel).catch(error => showToast("Could not copy the channel info.", error))}
+        />,
+        copyName && <Menu.MenuItem
+            key={PATTERNS.items.copyName}
+            id={PATTERNS.items.copyName}
+            label="Copy Name"
+            action={() => copyWithToast(channel.name, `Channel name "${channel.name}" copied`)}
+        />,
+        copyStatus && <Menu.MenuItem
+            key={PATTERNS.items.copyStatus}
+            id={PATTERNS.items.copyStatus}
+            label="Copy Status"
+            action={async () => {
+                const status = await fetchVoiceChannelStatus(channel);
+                if (status) copyWithToast(status, `Channel status "${status}" copied`);
+                else showToast("This channel has no status.");
+            }}
+        />,
+        copyCode && <Menu.MenuItem
+            key={PATTERNS.items.copyCode}
+            id={PATTERNS.items.copyCode}
+            label="Copy Code"
+            action={async () => {
+                const code = await extractCode(channel);
+                if (code) copyWithToast(code, `Code ${code} copied`);
+                else showToast("No code found in this channel.");
+            }}
+        />
+    ].filter(isTruthy);
+    if (!items.length) return null;
+    return <Menu.MenuItem key={PATTERNS.items.copy} id={PATTERNS.items.copy} label="Copy">{items}</Menu.MenuItem>;
 }
 
 function addVoiceChannelItems(children: MenuChildren, channel: Channel) {
-    const items = [copySubmenuFor(channel)];
-    if (channel.type === ChannelType.GUILD_VOICE && PermissionStore.can(PermissionsBits.SET_VOICE_CHANNEL_STATUS, channel)) {
+    const items = [copySubmenuFor(channel)].filter(isTruthy);
+    if (settings.store.setStatus && channel.type === ChannelType.GUILD_VOICE && PermissionStore.can(PermissionsBits.SET_VOICE_CHANNEL_STATUS, channel)) {
         items.push(
             <Menu.MenuItem
                 key={PATTERNS.items.setStatus}
@@ -135,7 +142,7 @@ function addVoiceChannelItems(children: MenuChildren, channel: Channel) {
             />
         );
     }
-    addSubmenu(children, items);
+    if (items.length) addSubmenu(children, items);
 }
 
 export const channelMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { channel?: Channel; }) => {
@@ -143,7 +150,7 @@ export const channelMenuPatch: NavContextMenuPatchCallback = (children, { channe
 };
 
 export const userMenuPatch: NavContextMenuPatchCallback = (children, { user }: { user?: User; }) => {
-    if (!user) return;
+    if (!user || !settings.store.userMenu) return;
     const channelId = VoiceStateStore.getVoiceStateForUser(user.id)?.channelId;
     const channel = channelId ? ChannelStore.getChannel(channelId) : null;
     if (isVoiceChannel(channel)) addVoiceChannelItems(children, channel);

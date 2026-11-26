@@ -38,6 +38,12 @@ export const settings = definePluginSettings({
         description: "Comma separated server ids where joining a voice channel copies its code.",
         default: PATTERNS.defaults.autoExtractServers
     },
+    copyInfo: { type: OptionType.BOOLEAN, description: "Show Copy Info in a voice channel's Copy submenu.", default: true },
+    copyName: { type: OptionType.BOOLEAN, description: "Show Copy Name in a voice channel's Copy submenu.", default: true },
+    copyStatus: { type: OptionType.BOOLEAN, description: "Show Copy Status in a voice channel's Copy submenu.", default: true },
+    copyCode: { type: OptionType.BOOLEAN, description: "Show Copy Code in a voice channel's Copy submenu.", default: true },
+    setStatus: { type: OptionType.BOOLEAN, description: "Show Set Status on voice channels where you're allowed to set it.", default: true },
+    userMenu: { type: OptionType.BOOLEAN, description: "Also show the voice channel items when right-clicking a user who is in voice.", default: true },
     openInBrowser: {
         type: OptionType.BOOLEAN,
         description: "Add \"Open in Browser\" after Open Link, which always opens the link in your browser instead of an Equibop window.",

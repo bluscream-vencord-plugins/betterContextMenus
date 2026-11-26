@@ -28,6 +28,9 @@ When you join a voice channel in one of the listed servers in this Discord windo
 | Code regex | five letters or digits | What counts as a code. Invalid expressions are rejected. |
 | Ignored words | `camos,grind` | Words that match the regex but aren't codes. |
 | Auto extract servers | two COD Warzone servers | Comma separated server ids for auto copy. |
+| Copy Info / Copy Name / Copy Status / Copy Code | on | Show each Copy item. With all four off, the Copy submenu is gone. |
+| Set Status | on | Show Set Status. |
+| User menu | on | Also show the voice channel items on users who are in voice. |
 | Open in browser | on | Adds Open in Browser after Open Link. |
 | Show Open Chat when locked | on | See above. |
 | Logging | off | Debug logging to the console. |
