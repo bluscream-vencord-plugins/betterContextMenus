@@ -40,5 +40,7 @@ export const PATTERNS = {
         /** COD Warzone servers whose voice channels carry lobby codes. */
         autoExtractServers: "500074231544152074,687345074627149873"
     },
-    listSeparator: ","
+    listSeparator: ",",
+    /** Optional plugin with a clipboard copy that works while Discord isn't focused. */
+    nativeUtils: "NativeUtils"
 };

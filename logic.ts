@@ -4,10 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { copyWithToast } from "@utils/discord";
+import { isPluginEnabled } from "@api/PluginManager";
+import { copyToClipboard } from "@utils/clipboard";
 import { type Channel } from "@vencord/discord-types";
-import { AuthenticationStore, ChannelStore, MessageStore, SelectedChannelStore } from "@webpack/common";
+import { AuthenticationStore, ChannelStore, MessageStore, SelectedChannelStore, showToast } from "@webpack/common";
 
+import { PATTERNS } from "./patterns";
 import { settings } from "./settings";
 import { extractCodeWithIgnore, fetchVoiceChannelStatus, isVoiceChannel, log, splitList } from "./utils";
 
@@ -18,6 +20,12 @@ export interface OwnVoiceState {
 }
 
 let lastChannelId: string | null = null;
+
+async function copyText(text: string) {
+    const nativeCopy = IS_WEB ? undefined : VencordNative.pluginHelpers[PATTERNS.nativeUtils]?.copyText;
+    if (nativeCopy && isPluginEnabled(PATTERNS.nativeUtils) && await nativeCopy(text) === true) return;
+    await copyToClipboard(text);
+}
 
 export function resetVoiceTracking() {
     lastChannelId = SelectedChannelStore.getVoiceChannelId() ?? null;
@@ -45,7 +53,14 @@ async function autoExtract(channel: Channel) {
     if (!isVoiceChannel(channel) || !splitList(settings.store.autoExtractServers).includes(channel.guild_id)) return;
     const code = await extractCode(channel);
     log(code ? `Auto-extracted a code in ${channel.id}` : `No code found in ${channel.id}`);
-    if (code) copyWithToast(code, `Auto-extracted code ${code} copied`);
+    if (!code) return;
+    try {
+        await copyText(code);
+        showToast({ text: `Auto-extracted code ${code} copied`, variant: "success" });
+    } catch (e) {
+        log(`Copying code ${code} failed: ${e}`);
+        showToast({ text: `Couldn't copy code ${code}.`, variant: "critical" });
+    }
 }
 
 export function handleVoiceStateUpdates(voiceStates: OwnVoiceState[]) {
